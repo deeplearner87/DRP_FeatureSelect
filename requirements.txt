@@ -6,7 +6,6 @@ seaborn
 scikit-learn
 anndata
 scanpy
-os
 scipy
 xgboost
 shap
