@@ -19,8 +19,8 @@ def set_stage(stage):
 
 
     
-dir = 'D:/Dibyendu/Kerstin/'
-
+#dir = 'D:/Dibyendu/Kerstin/'
+dir = 'https://raw.githubusercontent.com/deeplearner87/DRP_FeatureSelect/main/'
 # In[3]:
 # # Drug response data
 drp = pd.read_csv(dir+'Rank_drugs.csv', sep=';', header=0, index_col=1)
