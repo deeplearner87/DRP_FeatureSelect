@@ -9,3 +9,4 @@ scanpy
 scipy
 xgboost
 shap
+openpyxl
