@@ -1,8 +1,13 @@
 streamlit
 pandas
 numpy
-plotly
-altair
 matplotlib
 seaborn
 scikit-learn
+anndata
+scanpy
+os
+scipy
+xgboost
+shap
+collections
