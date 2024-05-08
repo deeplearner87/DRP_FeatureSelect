@@ -53,7 +53,7 @@ lp = noOfdrugsPerSample[noOfdrugsPerSample==26].index
 
 #Select samples treated with 26 drugs
 drugs = drp.loc[drp['Labeling proteomics'].isin(lp)]
-print(drugs.shape)
+#print(drugs.shape)
 #drugs.head()
 
 
@@ -115,7 +115,7 @@ protein = pd.read_csv(dir+'Proteome_Atleast1validvalue_ImputedGD.txt', header=0,
 #protein.head()
 
 protein = protein.iloc[5:,:]
-print(protein.shape)
+#print(protein.shape)
 #protein.head()
 
 protein_copy = protein.copy()
@@ -177,7 +177,7 @@ def preSelectFeatures(X, y, threshold, exp_name):
     import os
     X['Target'] = y
     corr_mat = pd.DataFrame(X.corr()['Target'])
-    pd.DataFrame(corr_mat).to_csv(os.path.join(dir,'Results/ML/New/')+exp_name+'_correlation_with_target_DRP.csv')
+    #pd.DataFrame(corr_mat).to_csv(os.path.join(dir,'Results/ML/New/')+exp_name+'_correlation_with_target_DRP.csv')
     proteins = corr_mat.index[abs(corr_mat['Target']) >= threshold].tolist()   #consider both positive and negative correlations >=0.3 and <=-0.3
     #print(proteins)
     return proteins[:-1]
@@ -208,11 +208,11 @@ def evaluateClassifiers(X, y):
 
     X = X.loc[:,~X.columns.duplicated()]
     for model, name in zip(models, names):
-        print()
-        print(name)
+        #print()
+        #print(name)
         for score in ["accuracy", "f1_weighted", "roc_auc", "r2", "neg_mean_absolute_error", "normalized_mutual_info_score", "neg_root_mean_squared_error", "explained_variance"]:
             results = cross_val_score(model, X.values, y, cv = kfold, scoring = score)
-            print(score,': {:.2f}'.format(results.mean()))
+            #print(score,': {:.2f}'.format(results.mean()))
 
 def importancePlot(feat_imp, exp_name):
     import matplotlib.pyplot as plt
@@ -224,7 +224,7 @@ def importancePlot(feat_imp, exp_name):
     ax.set_title("Feature importance_"+exp_name)
     ax.set_ylabel("Score")
     ax.set_xlabel('Gene')
-    filename = exp_name+'_feature_importance_based_on_DRP.png'
+    #filename = exp_name+'_feature_importance_based_on_DRP.png'
     #plt.savefig(os.path.join(dir, 'Results/ML/New/')+filename, dpi = 300, format = 'png', bbox_inches="tight")
     
 def differentialPlot(df, conditions, exp_name):
@@ -244,7 +244,7 @@ def differentialPlot(df, conditions, exp_name):
     ad.obs = pd.DataFrame(conditions, columns=['class'])
     ad.var_names = X.columns
     ad.var_names_make_unique()
-    filename = exp_name+'_heatmap_based_on_DRP.png'
+    #filename = exp_name+'_heatmap_based_on_DRP.png'
     with plt.rc_context():
         ax = sc.pl.heatmap(ad, ad.var_names, groupby='class', swap_axes=True, show_gene_labels=True, cmap="PiYG", show=False)
         ax['heatmap_ax'].set_ylabel("Gene")
@@ -360,7 +360,7 @@ def classify(data, drug_class, exp_name, drugOfInterest, classifiers, num_featur
     
     #preselect features based on correlation with target variable from entire protein expression data
     feat = preSelectFeatures(X, y, threshold, exp_name)
-    print('{} proteins were found to have significant positive or negative correlation with the annotations.'.format(len(feat)))
+    #print('{} proteins were found to have significant positive or negative correlation with the annotations.'.format(len(feat)))
     #evaluateClassifiers(X, y)
     X = X[feat]
     X = protein2gene(X, X.columns, protein2gene_mapping)
