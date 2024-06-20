@@ -13,7 +13,10 @@ if 'stage' not in st.session_state:
 
 def set_stage(stage):
     st.session_state.stage = stage
-    
+
+dir = 'https://raw.githubusercontent.com/deeplearner87/DRP_FeatureSelect/main/'
+drp = pd.read_csv(dir+'Rank_drugs.csv', sep=';', header=0, index_col=1)
+
 def create_groups(df):
     df['susceptibility_logAUC'] = pd.to_numeric(df['susceptibility_logAUC'])
     conditions = [
