@@ -14,23 +14,6 @@ if 'stage' not in st.session_state:
 def set_stage(stage):
     st.session_state.stage = stage
     
-
-
-
-
-    
-#dir = 'D:/Dibyendu/Kerstin/'
-dir = 'https://raw.githubusercontent.com/deeplearner87/DRP_FeatureSelect/main/'
-# In[3]:
-# # Drug response data
-drp = pd.read_csv(dir+'Rank_drugs.csv', sep=';', header=0, index_col=1)
-#print(drp.shape)
-#drp.head()
-
-#drp.head()
-
-#drp['Labeling proteomics'].value_counts()
-
 def create_groups(df):
     df['susceptibility_logAUC'] = pd.to_numeric(df['susceptibility_logAUC'])
     conditions = [
@@ -69,18 +52,10 @@ classes = np.unique(drugs['Class'])
 
 
 drugs_pivoted = drugs.pivot(index='Labeling proteomics', columns='drug', values='susceptibility_logAUC')
-#print(drugs_pivoted.shape)
-#drugs_pivoted.head()
-
-#drugs_pivoted.to_csv(dir+'samples_treated_with_26_drug_panel_susceptibility_logAUC.csv')
 
 drug_class = drugs.pivot(index='Labeling proteomics', columns='drug', values='Class')
 #drug_class.head()
 
-#drug_class.to_csv(dir+'samples_treated_with_26_drug_panel_susceptibility_logAUC_classes.csv')
-
-
-# In[18]:
 # # Clinical data
 clin = pd.read_excel(dir+'Clinical_data_proteomics_28012024_KR.xlsx', header=0)
 clin['Sample ID Proteomics'] = clin['Sample ID Proteomics'].astype('str')
@@ -108,7 +83,6 @@ B_ALL_samples_relapse = B_ALL_samples.loc[B_ALL_samples['Diagnosis/Relapse']=='R
 T_ALL_samples_primary = T_ALL_samples.loc[T_ALL_samples['Diagnosis/Relapse']=='Diagnosis', 'Sample ID Proteomics']
 T_ALL_samples_relapse = T_ALL_samples.loc[T_ALL_samples['Diagnosis/Relapse']=='Relapse', 'Sample ID Proteomics']
 
-# In[26]:
 # # Protein data
 
 protein = pd.read_csv(dir+'Proteome_Atleast1validvalue_ImputedGD.txt', header=0, sep='\t')
@@ -124,11 +98,6 @@ protein.index = protein['Protein ID']
 
 protein = protein.iloc[:,0:128]
 #protein.head()
-
-#protein = protein.dropna()
-#protein = protein.dropna(how='all')
-#protein.dropna(axis=0, thresh=80, inplace=True)
-#protein.shape
 
 #Select samples treated with a 26 drugs panel
 protein = protein[unique_lp]
@@ -153,7 +122,6 @@ T_ALL_df = protein[protein.columns.intersection(T_ALL_samples['Sample ID Proteom
 #protein = protein.T
 #protein.head()
 
-# In[37]:
 # # Find feature importance w.r.t. a particular drug
 
 #from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc
@@ -246,7 +214,7 @@ def differentialPlot(df, conditions, exp_name):
     ad.var_names_make_unique()
     #filename = exp_name+'_heatmap_based_on_DRP.png'
     with plt.rc_context():
-        ax = sc.pl.heatmap(ad, ad.var_names, groupby='class', swap_axes=True, show_gene_labels=True, cmap="PiYG", show=False)
+        ax = sc.pl.heatmap(ad, ad.var_names, groupby='class', swap_axes=True, show_gene_labels=True, cmap="PiYG_r", show=False)
         ax['heatmap_ax'].set_ylabel("Gene")
         st.pyplot(plt.gcf())
         #plt.savefig(os.path.join(dir,'Results/ML/New/')+filename, dpi = 300, format = 'png', bbox_inches="tight")
@@ -374,7 +342,6 @@ def classify(data, drug_class, exp_name, drugOfInterest, classifiers, num_featur
 
 cell_type = st.selectbox('Select cell-type: ', ['T-ALL', 'B-ALL'])
 drugOfInterest = st.selectbox('Select drug', options=[opt.strip() for opt in unique_drugs])
-#selected_class = st.radio("Which class are you interested in?", options=[opt.strip() for opt in classes])
 
 if cell_type == 'B-ALL':
     data = B_ALL_df
@@ -387,183 +354,15 @@ threshold = st.slider('Select threshold for correlation-based feature pre-select
 classifiers = st.multiselect('Select models - You may choose multiple among the following: [Logistic Regression, Decision Tree Classifier, Random Forest Classifier, Support Vector Machine Classifer, XG Boost Classifier and Lasso Regression]', ['LR', 'DT', 'RF', 'SVC', 'XGB', 'Lasso'])
 #st.write(classifiers)
 
-#cell_type = 'T-ALL'
-#drugOfInterest = 'Dasatinib'
-#num_features = 50
-#threshold = 0.55 #threshold for correlation-based preselection
-#classifiers = ['LR', 'DT', 'RF', 'SVC', 'XGB', 'Lasso']
-#classifiers = ['LR', 'RF', 'SVC']
-
-
-#Global explanation
 analyze = st.button('Analyze', on_click=set_stage, args=(1,))
 if analyze:
-    #shap_importance = classify('Dexamethasone', 'Resistant', 20)
-    #shap_importance = classify(selected_drug, selected_class, num_features)
-    #st.write(st.session_state)
-    path = 'D:/Dibyendu/Kerstin/'
-    #shap_importance.to_csv(path+'shap_importance.csv')
-    exp_name = cell_type+'_'+drugOfInterest+'_'
-    selFeatures = classify(data, drug_class, exp_name, drugOfInterest, classifiers, num_features, threshold)
-
-# def performLocalExplanation(model, explainer, shap_values, X, sample, class_ind, num_features):
-#     #Local explanations
-#     # ans = st.text_input(
-#         #     "Do you want a local explanation (Y/N)? 👇", 'Y')
-#         # if ans in ('y', 'Y'):
-#         #     sample = st.text_input(
-#         #         "Enter the sample name 👇", 'S1')
-#             #print(X.index)
-#     st.write("dibyendu")
-#     ind = list(X.index).index(sample)
-#     #local explanation
-#     #shap.force_plot(explainer.expected_value[class_ind], shap_values[ind,:,class_ind], features= X.iloc[ind], link="logit", show=False)
-#     #st.pyplot(plt.gcf())
-#     shap.plots._waterfall.waterfall_legacy(explainer.expected_value[class_ind], shap_values[ind,:,class_ind], feature_names=X.columns, max_display=num_features, show=False)
-#     st.pyplot(plt.gcf())
-
-
-# def increment():
-#     global count
-#     count=1
-
-# if "clicked" not in st.session_state:
-#     st.session_state.clicked = False
-
-
-# def estimateFeatureContributionsViaXAI(model, X, y, class_ind, num_features):
-#     import matplotlib.pyplot as plt
-#     shap.initjs() # Need to load JS vis in the notebook
-#     #Check Shapley values for the last model
-#     #explaining model
-#     explainer = shap.TreeExplainer(model)
-#     shap_values = explainer.shap_values(X)
-#     #print(X_train.shape)
-#     #print(shap_values.shape)
-#     #print('Expected Values: ', explainer.expected_value)
-#     #Global explnations
-#     shap.summary_plot(shap_values[:,:,class_ind], X, plot_type="bar", max_display=num_features, show=False)  
-#     #plt.show()
-#     st.pyplot(plt.gcf())
-#     sh_imp = selectFeatures(shap_values[:,:,class_ind], X.columns, num_features)
-#     #ans = st.text_input('Do you want a local explanation?','N')
-#     # if st.button("Want a local explanation?") or st.session_state["clicked"]:
-#     #     st.session_state["clicked"] = True
-#     #     #if ans in ('y','Y'):
-#     # if st.session_state["clicked"] == True:
-#     #     sample = st.selectbox('Select sample id', options=[opt.strip() for opt in X.index]) #, on_change=increment())
-#     #     #performLocalExplanation(model, explainer, shap_values, X, sample, class_ind, num_features)
-#     #if sample=='None':
-#     #    st.stop()
-#     #else:
-#     #    
-#     #if count==1:
-#         #performLocalExplanation(model, explainer, shap_values, X, sample, class_ind, num_features)
-#     return sh_imp
-
-
-# def classify(drugOfInterest, classOfInterest, num_features):
-#     label = drug_class[drugOfInterest]
-#     le = LabelEncoder()
-#     y = le.fit_transform(label)
-#     class_mapping = dict(zip(le.classes_,range(len(le.classes_))))
-#     print(class_mapping)
-#     class_ind = class_mapping[classOfInterest]
-#     X = protein
-#     cols = X.columns.astype(str)
-#     samples = X.index
-#     X = pd.DataFrame(np.array(X, dtype=float))
-#     X.columns = cols
-#     X.index = samples
-#     #preselect features based on correlation with target variable from entire protein expression data
-#     feat = preSelectFeatures(X, y)
-#     print('{} proteins were found to have significant positive or negative correlation with the annotations.'.format(len(feat)))
-#     #evaluateClassifiers(X, y)
-#     X = X[feat]
-#     X = protein2gene(X, X.columns, protein2gene_mapping)
-    
-#     #Train-test split
-#     #X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=42)
-#     model = RandomForestClassifier(
-#          n_estimators=100,
-#          n_jobs=-1,
-#          min_samples_leaf = 5,
-#          oob_score=True,
-#          random_state = 42)
-#     #model.fit(X_train, y_train)
-#     model.fit(X, y)
-#     #print(f"RF train accuracy: {model.score(X, y):.2f}")
-#     #print(f"RF train accuracy: {model.score(X_train, y_train):.2f}")
-#     #print(f"RF test accuracy: {model.score(X_test, y_test):.2f}")
-#     #explainModel(model, X_train, y_train, X_test, y_test)
-#     sh_imp = estimateFeatureContributionsViaXAI(model, X, y, class_ind, num_features)
-#     return sh_imp                                           
-
-
-# def differentialPlot(df1, df2, conditions, shap_importance, exp_name, path):
-#     import scanpy as sc
-#     import anndata
-#     from scipy import stats
-    
-#     data = pd.concat([df1, df2])
-#     cols = data.columns.astype(str)
-#     samples = data.index
-#     X = pd.DataFrame(np.array(data, dtype=float))
-#     X.columns = cols
-#     X.index = samples
-#     X = protein2gene(X, data.columns, protein2gene_mapping)
-#     X = stats.zscore(X, axis=1)
-#     X = X[shap_importance['feature']]
-    
-#     target = [conditions[0]]*df1.shape[0]+[conditions[1]]*df2.shape[0]
-
-
-#     ad = anndata.AnnData(X)
-#     ad.obs = pd.DataFrame(target, columns=['diagnosis'])
-#     ad.var_names = X.columns
-#     ad.var_names_make_unique()
-#     filename = 'Results/ML/'+exp_name+'_heatmap_based_on_protein_expr_only.png'
-#     with plt.rc_context():
-#         ax = sc.pl.heatmap(ad, ad.var_names, groupby='diagnosis', swap_axes=True, show_gene_labels=True, cmap="magma", show=False)
-#         ax['heatmap_ax'].set_ylabel("Gene")
-#         st.pyplot(plt.gcf())
-#         plt.savefig(path+filename, dpi = 300, format = 'png', bbox_inches="tight")
-
-
-
-
-    
-
-# if st.session_state.stage > 0:
-#     path = 'D:/Dibyendu/Kerstin/'
-#     #shap_importance = pd.read_csv(path+'shap_importance.csv')
-#     #differential plot 
-#     drug = selected_drug
-#     clss = selected_class
-#     cell_type = "T-ALL"
-#     diagnosis = "Primary_vs_Relapse"
-#     path = 'D:/Dibyendu/Kerstin/'
-    
-#     exp = st.selectbox('Select experiment', ['T-ALL_Primary_vs_Relapse', 'B-ALL_Primary_vs_Relapse', 'Primary_T-ALL_vs_B-ALL', 'Relapse_T-ALL_vs_B-ALL'])
-#     if st.button('See heatmap'):
-#         if exp=='T-ALL_Primary_vs_Relapse':
-#             df1=T_ALL_primary
-#             df2=T_ALL_relapse
-#             conditions = ['primary', 'relapse']
-#         elif exp=='B-ALL_Primary_vs_Relapse':
-#             df1=B_ALL_primary
-#             df2=B_ALL_relapse
-#             conditions = ['primary', 'relapse']
-#         elif exp=='Primary_T-ALL_vs_B-ALL':
-#             df1=T_ALL_primary
-#             df2=B_ALL_primary
-#             conditions = ['T-ALL', 'B-ALL']
-#         else:
-#             df1=T_ALL_relapse
-#             df2=B_ALL_relapse
-#             conditions = ['T-ALL', 'B-ALL']
-        
-#         exp_name = 'DRP'+'_'+drug+'_'+clss+'_'+exp
-#         differentialPlot(df1, df2, conditions, shap_importance, exp_name, path)
-
-
+    if len(classifiers) < 2:
+        st.write('Please select at least 2 classifiers')
+    else:
+        #shap_importance = classify('Dexamethasone', 'Resistant', 20)
+        #shap_importance = classify(selected_drug, selected_class, num_features)
+        #st.write(st.session_state)
+        path = 'D:/Dibyendu/Kerstin/'
+        #shap_importance.to_csv(path+'shap_importance.csv')
+        exp_name = cell_type+'_'+drugOfInterest+'_'
+        selFeatures = classify(data, drug_class, exp_name, drugOfInterest, classifiers, num_features, threshold)
