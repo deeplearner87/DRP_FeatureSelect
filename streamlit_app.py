@@ -28,7 +28,7 @@ def create_groups(df):
     values = ['Sensitive', 'Intermediate', 'Resistant']
 
     # create a new column and use np.select to assign values to it using our lists as arguments
-    df['Class'] = np.select(conditions, values)
+    df['Class'] = np.select(conditions, values, default='Unknown')
     return df
 
 noOfdrugsPerSample = drp['Labeling proteomics'].value_counts()
