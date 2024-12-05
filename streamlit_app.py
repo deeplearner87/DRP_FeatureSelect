@@ -220,7 +220,7 @@ def preSelectFeatures(X, y, threshold, exp_name):
     import os
     X['Target'] = y
     corr_mat = pd.DataFrame(X.corr()['Target'])
-    pd.DataFrame(corr_mat).to_csv(os.path.join(dir,'Results/ML/New/')+exp_name+'_correlation_with_target_DRP.csv')
+    #pd.DataFrame(corr_mat).to_csv(os.path.join(dir,'Results/ML/New/')+exp_name+'_correlation_with_target_DRP.csv')
     proteins = corr_mat.index[abs(corr_mat['Target']) >= threshold].tolist()   #consider both positive and negative correlations >=0.3 and <=-0.3
     #print(proteins)
     return proteins[:-1]
