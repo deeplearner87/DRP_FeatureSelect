@@ -22,25 +22,11 @@ drp = pd.read_csv(dir+'Rank_drugs.csv', sep=';', header=0, index_col=1)
 #print(drp.shape)
 #drp.head()
 
-#Check for duplicate combinations
-# Identify the duplicates based on 'Labeling proteomics' and 'drug' columns
-duplicates = drp[['Labeling proteomics', 'drug']].duplicated()
-
-# Count how many duplicates there are (excluding the first occurrence)
-num_duplicates = duplicates.sum()
-
-# Print the number of duplicates
-#print(f"Number of duplicate combinations: {num_duplicates}")
-
-# Optionally, show the duplicated rows (this includes the first occurrence as well)
-duplicated_rows = drp[duplicates]
-#print(f"Duplicated rows:\n{duplicated_rows}")
-
 
 #Find missing combinations (if any)
 from itertools import product
 
-# Define the sample IDs and drugs of interest
+#Define the sample IDs and drugs of interest
 sample_ids = [f'S{i}' for i in range(1, 128)]  # S1 to S127 #because 'S128' is contaminated
 drugs_of_interest = [
     'Idarubicin', 'Dasatinib', 'Ponatinib', 'Venetoclax', 'Navitoclax', 'Doxorubicin', 
@@ -49,20 +35,20 @@ drugs_of_interest = [
     'Panobinostat', 'Trametinib', 'Ruxolitinib', 'Dinaciclib', 'A1331852', 'S-63845', 'Nelarabine'
 ]
 
-# Create all combinations of sample IDs and drugs
+#Create all combinations of sample IDs and drugs
 all_combinations = pd.DataFrame(
     list(product(sample_ids, drugs_of_interest)), 
     columns=['Labeling proteomics', 'drug']
 )
 
-# Ensure 'Labeling proteomics' in both the DRP dataframe and the all_combinations dataframe is a string
+#Ensure 'Labeling proteomics' in both the DRP dataframe and the all_combinations dataframe is a string
 drp['Labeling proteomics'] = drp['Labeling proteomics'].astype(str)
 drp.loc[:, 'Labeling proteomics'] = 'S' + drp['Labeling proteomics']
 
-# Check which combinations are present in the DRP DataFrame
+#Check which combinations are present in the DRP DataFrame
 existing_combinations = drp[['Labeling proteomics', 'drug']].drop_duplicates()
 
-# Merge to find the combinations present in DRP
+#Merge to find the combinations present in DRP
 merged_combinations = pd.merge(
     all_combinations, existing_combinations, 
     on=['Labeling proteomics', 'drug'], 
@@ -70,34 +56,23 @@ merged_combinations = pd.merge(
     indicator=True
 )
 
-# Filter to get the combinations that are present (i.e., '_merge' == 'both')
+#Filter to get the combinations that are present (i.e., '_merge' == 'both')
 combinations_present = merged_combinations[merged_combinations['_merge'] == 'both']
 
-# Filter to get the combinations that are missing (i.e., '_merge' == 'left_only')
+#Filter to get the combinations that are missing (i.e., '_merge' == 'left_only')
 combinations_missing = merged_combinations[merged_combinations['_merge'] == 'left_only']
 
-# Output the present and missing combinations
-"""
-if combinations_missing.empty:
-    print("All combinations of sample IDs and drugs are present in the dataframe.")
-else:
-    print("Missing combinations of sample IDs and drugs:")
-    print(combinations_missing)
-
-# Optionally, you can count the number of missing combinations
-print(f"Number of missing combinations: {combinations_missing.shape[0]}")
-"""
 #Samples which were not treated with all the 25 drugs
 missing_samples = combinations_missing['Labeling proteomics'].unique()
 #len(missing_samples)
 
-# Group by 'Labeling proteomics' and 'drug' and check for NaN in 'susceptibility_logAUC'
+#Group by 'Labeling proteomics' and 'drug' and check for NaN in 'susceptibility_logAUC'
 nan_check = drp.groupby(['Labeling proteomics', 'drug'])['susceptibility_logAUC'].apply(lambda x: x.isna().any())
 
-# Filter only the combinations where NaN exists
+#Filter only the combinations where NaN exists
 combinations_with_nan = nan_check[nan_check]
 
-# Display the result
+#Display the result
 #if not combinations_with_nan.empty:
 #    print("The following combinations have NaN in 'susceptibility_logAUC':")
 #    print(combinations_with_nan)
@@ -153,11 +128,9 @@ def create_groups(df):
     
     return df
 
-# Find duplicate rows based on 'Labeling proteomics' and 'drug'
+#Find duplicate rows based on 'Labeling proteomics' and 'drug'
 #duplicates = drp[drp.duplicated(subset=['Labeling proteomics', 'drug'], keep=False)]
-# Display duplicates
-#print("Duplicate rows:")
-#print(duplicates)
+
 
 filtered_drugs = create_groups(filtered_drugs)
 #filtered_drugs.head()
@@ -237,7 +210,7 @@ T_ALL_df = protein[protein.columns.intersection(T_ALL_samples['Sample ID Proteom
 
 
 
-# # Find feature importance w.r.t. a particular drug
+##Find feature importance w.r.t. a particular drug
 
 
 from sklearn.preprocessing import LabelEncoder
