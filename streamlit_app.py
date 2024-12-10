@@ -417,13 +417,13 @@ def classify(data, drug_class, exp_name, classifiers, num_features, threshold, o
     #X.to_csv(os.path.join(dir+'Results/ML/New_05122024/')+exp_name+'DRP_ML_selFeatures_with_annotations.csv')
     return selFeatures
 
-omics_type = st.selectbox('Select omics-type: ', ['Transcriptomics', 'Proteomics'])
-cell_type = st.selectbox('Select cell-type: ', ['T-ALL', 'B-ALL'])
+omics_type = st.selectbox('Select omics-type', ['Transcriptomics', 'Proteomics'])
+cell_type = st.selectbox('Select cell-type', ['T-ALL', 'B-ALL'])
 drugs_of_interest = ['Idarubicin', 'Dasatinib', 'Ponatinib', 'Venetoclax', 'Navitoclax', 'Doxorubicin', 'Birinapant', 'Bortezomib', 'CB-103', 'Dexamethasone', 'Cytarabine', 'Etoposide', 'Methotrexate', 'Selinexor', 'Vincristine', 'Nilotinib', 'Temsirolimus', 'Bosutinib', 'Panobinostat', 'Trametinib', 'Ruxolitinib', 'Dinaciclib', 'A1331852', 'S-63845', 'Nelarabine']
 drugOfInterest = st.selectbox('Select drug', options=[opt.strip() for opt in drugs_of_interest])
-selected_class = st.radio("Which class are you interested in?", options=[opt.strip() for opt in classes])
+#selected_class = st.radio("Which class are you interested in?", options=[opt.strip() for opt in classes])
 #num_features = st.slider('Select number of genes',0, protein.shape[1], 20))
-num_features = st.slider('Select number of genes you want to select',1, 100, 50)
+num_features = st.slider('Select number of features (genes/proteins) you want to select',1, 100, 50)
 threshold = st.slider('Select threshold for correlation-based feature pre-selection', 0.00, 1.00, 0.55) #threshold for correlation-based preselection
 classifiers = st.multiselect('Select models - You may choose multiple among the following: [Logistic Regression, Decision Tree Classifier, Random Forest Classifier, Support Vector Machine Classifer, XG Boost Classifier and Lasso Regression]', ['LR', 'DT', 'RF', 'SVC', 'XGB', 'Lasso'])
 st.write(classifiers)
