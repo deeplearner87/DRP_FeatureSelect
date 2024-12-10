@@ -3,9 +3,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 st.write("""
-# T-ALL & B-ALL - DRP data analysis!
+# High risk ALL - DRP data analysis!
 """)
 
 if 'stage' not in st.session_state:
@@ -17,6 +18,7 @@ def set_stage(stage):
 
     
 dir = 'https://raw.githubusercontent.com/deeplearner87/DRP_FeatureSelect/main/'
+os.chdir(os.chdir(dir))
 
 # Drug response data
 def create_groups(df, drugOfInterest):
@@ -43,7 +45,7 @@ def create_groups(df, drugOfInterest):
     return df
 
 def handlingDrugResponseData(drugOfInterest):
-    drp = pd.read_csv('Data/Rank_Drugs_cleaned_only25_drugs_10122024.csv', header=0)
+    drp = pd.read_csv('Rank_Drugs_cleaned_only25_drugs_10122024.csv', header=0)
     drp['Labeling proteomics'] = drp['Labeling proteomics'].astype(str)
     drp.loc[:, 'Labeling proteomics'] = 'S' + drp['Labeling proteomics']
     #Removing rows corresponding to the contaminated sample '128'
@@ -61,7 +63,7 @@ def handlingDrugResponseData(drugOfInterest):
 
 # Clinical data
 def handlingClinicalData():
-    clin = pd.read_excel('Data/Clinical_data_proteomics_28012024_KR.xlsx', header=0)
+    clin = pd.read_excel('Clinical_data_proteomics_28012024_KR.xlsx', header=0)
     clin['Sample ID Proteomics'] = clin['Sample ID Proteomics'].astype('str')
     clin['Sample ID Proteomics'] = 'S'+clin['Sample ID Proteomics']
     clin['Immunophenoytpe']=clin['Immunophenoytpe'].astype('str')
@@ -82,7 +84,7 @@ def handlingClinicalData():
     #T_ALL_samples_relapse = T_ALL_samples.loc[T_ALL_samples['Diagnosis/Relapse']=='Relapse', 'Sample ID Proteomics']
 
     #Loading the protein data
-    protein = pd.read_csv('Data/Proteome_Atleast1validvalue_ImputedGD.txt', header=0, sep='\t', low_memory=False)
+    protein = pd.read_csv('Proteome_Atleast1validvalue_ImputedGD.txt', header=0, sep='\t', low_memory=False)
     protein = protein.iloc[5:,:]
     protein_copy = protein.copy()
     protein.index = protein['Protein ID']
@@ -104,7 +106,7 @@ def handlingClinicalData():
 
 # Mapping DRP against Transcriptomics data
 def mapping_DRP_Transcriptomics(drug_class, TALL_protein_samples, BALL_protein_samples):
-    mapping_df = pd.read_excel('Data/T-ALL_Samples_Consolidated_Dibyendu_301024_051124_151124.xlsx', sheet_name='Proteomics', header=1)
+    mapping_df = pd.read_excel('T-ALL_Samples_Consolidated_Dibyendu_301024_051124_151124.xlsx', sheet_name='Proteomics', header=1)
     mapping_df = mapping_df[['Sample ID Submitted', 'Remarks (Dibyendu)', 'Protein Sample ID']].dropna()
     #Ensure the column is treated as strings and NaN values are properly handled
     mapping_df['Protein Sample ID'] = mapping_df['Protein Sample ID'].astype(str).replace('nan', '')
@@ -142,7 +144,7 @@ def mapping_DRP_Transcriptomics(drug_class, TALL_protein_samples, BALL_protein_s
     drug_class_rna = joined_df.drop(columns = ['Sample ID Submitted', 'Remarks (Dibyendu)', 'protein_sample_id', 'Labeling proteomics'])
 
     #Loading Transcriptomics data
-    rna = pd.read_csv('Data/High-Risk-ALL_rna_preprocessed.csv', index_col=0)
+    rna = pd.read_csv('High-Risk-ALL_rna_preprocessed.csv', index_col=0)
     B_ALL_rna_df = rna.loc[BALL_RNA_samples]
     T_ALL_rna_df = rna.loc[TALL_RNA_samples]
     return [drug_class_rna, T_ALL_rna_df, B_ALL_rna_df]
