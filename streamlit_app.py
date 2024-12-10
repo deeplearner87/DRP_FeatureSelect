@@ -420,7 +420,7 @@ def classify(data, drug_class, exp_name, classifiers, num_features, threshold, o
 omics_type = st.selectbox('Select omics-type: ', ['Transcriptomics', 'Proteomics'])
 cell_type = st.selectbox('Select cell-type: ', ['T-ALL', 'B-ALL'])
 drugs_of_interest = ['Idarubicin', 'Dasatinib', 'Ponatinib', 'Venetoclax', 'Navitoclax', 'Doxorubicin', 'Birinapant', 'Bortezomib', 'CB-103', 'Dexamethasone', 'Cytarabine', 'Etoposide', 'Methotrexate', 'Selinexor', 'Vincristine', 'Nilotinib', 'Temsirolimus', 'Bosutinib', 'Panobinostat', 'Trametinib', 'Ruxolitinib', 'Dinaciclib', 'A1331852', 'S-63845', 'Nelarabine']
-drugOfInterest = st.selectbox('Select drug', options=[opt.strip() for opt in drugs_of_interest]
+drugOfInterest = st.selectbox('Select drug', options=[opt.strip() for opt in drugs_of_interest])
 selected_class = st.radio("Which class are you interested in?", options=[opt.strip() for opt in classes])
 #num_features = st.slider('Select number of genes',0, protein.shape[1], 20))
 num_features = st.slider('Select number of genes you want to select',1, 100, 50)
