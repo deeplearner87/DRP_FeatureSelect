@@ -423,7 +423,8 @@ def classify(data, drug_class, exp_name, classifiers, num_features, threshold, o
     #X.to_csv(os.path.join(dir+'Results/ML/New_05122024/')+exp_name+'DRP_ML_selFeatures_with_annotations.csv')
     return selFeatures
 
-omics_type = st.selectbox('Select omics-type', ['Proteomics', 'Transcriptomics'])
+#omics_type = st.selectbox('Select omics-type', ['Proteomics', 'Transcriptomics'])
+omics_type = 'Proteomics'
 cell_type = st.selectbox('Select cell-type', ['T-ALL', 'B-ALL'])
 drugs_of_interest = ['Idarubicin', 'Dasatinib', 'Ponatinib', 'Venetoclax', 'Navitoclax', 'Doxorubicin', 'Birinapant', 'Bortezomib', 'CB-103', 'Dexamethasone', 'Cytarabine', 'Etoposide', 'Methotrexate', 'Selinexor', 'Vincristine', 'Nilotinib', 'Temsirolimus', 'Bosutinib', 'Panobinostat', 'Trametinib', 'Ruxolitinib', 'Dinaciclib', 'A1331852', 'S-63845', 'Nelarabine']
 drugOfInterest = st.selectbox('Select drug', options=[opt.strip() for opt in drugs_of_interest])
