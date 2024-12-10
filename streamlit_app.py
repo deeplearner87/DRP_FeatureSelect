@@ -145,7 +145,10 @@ def mapping_DRP_Transcriptomics(drug_class, TALL_protein_samples, BALL_protein_s
     drug_class_rna = joined_df.drop(columns = ['Sample ID Submitted', 'Remarks (Dibyendu)', 'protein_sample_id', 'Labeling proteomics'])
 
     #Loading Transcriptomics data
-    rna = pd.read_csv(dir+'High-Risk-ALL_rna_preprocessed.csv', index_col=0)
+    file_url = "https://drive.google.com/file/d/1GfEkMNic_H6pGahtpB14X9iTgvcAHdf5/view?usp=sharing"
+
+    # Read the CSV file from Google Drive
+    rna = pd.read_csv(file_url, index_col=0)
     B_ALL_rna_df = rna.loc[BALL_RNA_samples]
     T_ALL_rna_df = rna.loc[TALL_RNA_samples]
     return [drug_class_rna, T_ALL_rna_df, B_ALL_rna_df]
