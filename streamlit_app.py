@@ -18,7 +18,7 @@ def set_stage(stage):
 
     
 dir = 'https://raw.githubusercontent.com/deeplearner87/DRP_FeatureSelect/main/'
-os.chdir(os.chdir(dir))
+os.chdir(dir)
 
 # Drug response data
 def create_groups(df, drugOfInterest):
