@@ -18,98 +18,11 @@ def set_stage(stage):
     
 dir = 'https://raw.githubusercontent.com/deeplearner87/DRP_FeatureSelect/main/'
 
-drp = pd.read_csv(dir+'Rank_drugs.csv', sep=';', header=0, index_col=1)
-#print(drp.shape)
-#drp.head()
-
-
-#Find missing combinations (if any)
-from itertools import product
-
-#Define the sample IDs and drugs of interest
-sample_ids = [f'S{i}' for i in range(1, 128)]  # S1 to S127 #because 'S128' is contaminated
-drugs_of_interest = [
-    'Idarubicin', 'Dasatinib', 'Ponatinib', 'Venetoclax', 'Navitoclax', 'Doxorubicin', 
-    'Birinapant', 'Bortezomib', 'CB-103', 'Dexamethasone', 'Cytarabine', 'Etoposide', 
-    'Methotrexate', 'Selinexor', 'Vincristine', 'Nilotinib', 'Temsirolimus', 'Bosutinib', 
-    'Panobinostat', 'Trametinib', 'Ruxolitinib', 'Dinaciclib', 'A1331852', 'S-63845', 'Nelarabine'
-]
-
-#Create all combinations of sample IDs and drugs
-all_combinations = pd.DataFrame(
-    list(product(sample_ids, drugs_of_interest)), 
-    columns=['Labeling proteomics', 'drug']
-)
-
-#Ensure 'Labeling proteomics' in both the DRP dataframe and the all_combinations dataframe is a string
-drp['Labeling proteomics'] = drp['Labeling proteomics'].astype(str)
-drp.loc[:, 'Labeling proteomics'] = 'S' + drp['Labeling proteomics']
-
-#Check which combinations are present in the DRP DataFrame
-existing_combinations = drp[['Labeling proteomics', 'drug']].drop_duplicates()
-
-#Merge to find the combinations present in DRP
-merged_combinations = pd.merge(
-    all_combinations, existing_combinations, 
-    on=['Labeling proteomics', 'drug'], 
-    how='left', 
-    indicator=True
-)
-
-#Filter to get the combinations that are present (i.e., '_merge' == 'both')
-combinations_present = merged_combinations[merged_combinations['_merge'] == 'both']
-
-#Filter to get the combinations that are missing (i.e., '_merge' == 'left_only')
-combinations_missing = merged_combinations[merged_combinations['_merge'] == 'left_only']
-
-#Samples which were not treated with all the 25 drugs
-missing_samples = combinations_missing['Labeling proteomics'].unique()
-#len(missing_samples)
-
-#Group by 'Labeling proteomics' and 'drug' and check for NaN in 'susceptibility_logAUC'
-nan_check = drp.groupby(['Labeling proteomics', 'drug'])['susceptibility_logAUC'].apply(lambda x: x.isna().any())
-
-#Filter only the combinations where NaN exists
-combinations_with_nan = nan_check[nan_check]
-
-#Display the result
-#if not combinations_with_nan.empty:
-#    print("The following combinations have NaN in 'susceptibility_logAUC':")
-#    print(combinations_with_nan)
-#else:
-#    print("No combinations have NaN in 'susceptibility_logAUC'.")
-
-drugs_of_interest = ['Idarubicin', 'Dasatinib', 'Ponatinib', 'Venetoclax', 'Navitoclax', 'Doxorubicin', 'Birinapant', 'Bortezomib', 'CB-103', 'Dexamethasone', 'Cytarabine', 'Etoposide', 'Methotrexate', 'Selinexor', 'Vincristine', 'Nilotinib', 'Temsirolimus', 'Bosutinib', 'Panobinostat', 'Trametinib', 'Ruxolitinib', 'Dinaciclib', 'A1331852', 'S-63845', 'Nelarabine']
-#drugs_of_interest = ['Dasatinib', 'Ponatinib', 'Venetoclax', 'Navitoclax', 'Doxorubicin', 'Birinapant', 'Bortezomib', 'CB-103', 'Dexamethasone', 'Cytarabine', 'Etoposide', 'Methotrexate', 'Selinexor', 'Vincristine', 'Nilotinib', 'Temsirolimus', 'Panobinostat', 'Trametinib', 'Ruxolitinib', 'Dinaciclib', 'S-63845']
-
-#Drop duplicates and keep only the first entry
-drp = drp.drop_duplicates(subset=['Labeling proteomics', 'drug'], keep='first')
-
-#Identify drugs of interest present in the dataset
-present_drugs = drp['drug'].unique()
-missing_drugs = [drug for drug in drugs_of_interest if drug not in present_drugs]
-if missing_drugs:
-    print("Drugs not found in dataset:", missing_drugs)
-
-#Proceed with filtering for drugs of interest
-filtered_drugs = drp.loc[drp['drug'].isin(drugs_of_interest)]
-
-#Get unique 'Labeling proteomics' values and their count
-lp = filtered_drugs['Labeling proteomics'].unique()
-print('No.of mouse treated with the drugs of interest: ', len(lp))
-
-#Filter the DataFrame further if needed
-#Do not use the drugs dataframe because some of these samples have been treated with more drugs, see result below...
-#drugs = drp[drp['Labeling proteomics'].isin(lp)]
-#drugs['Labeling proteomics'].value_counts()
-
-#Remove the rows corresponding to the samples which were not treated with all the 25 drugs
-filtered_drugs = filtered_drugs.loc[~filtered_drugs['Labeling proteomics'].isin(missing_samples)]
-#print(filtered_drugs.shape)
-#filtered_drugs.head()
-
-def create_groups(df):
+# Drug response data
+def create_groups(df, drugOfInterest):
+    df = df.loc[df['drug']==drugOfInterest]
     # Convert column to numeric if not already
+    df = df.copy()
     df['susceptibility_logAUC'] = pd.to_numeric(df['susceptibility_logAUC'], errors='coerce')
     
     # Define conditions for classification
@@ -125,111 +38,191 @@ def create_groups(df):
     # Use np.select to create the 'Class' column safely
     df = df.copy()  # Ensure we're working with a copy to avoid the warning
     df.loc[:, 'Class'] = np.select(conditions, values, default='Unknown')
-    
+    df.index = df['Labeling proteomics']
+    df.drop(columns=['Labeling proteomics', 'drug'], inplace=True)
     return df
 
-#Find duplicate rows based on 'Labeling proteomics' and 'drug'
-#duplicates = drp[drp.duplicated(subset=['Labeling proteomics', 'drug'], keep=False)]
+def handlingDrugResponseData(drugOfInterest):
+    drp = pd.read_csv('Data/Rank_Drugs_cleaned_only25_drugs_10122024.csv', header=0)
+    drp['Labeling proteomics'] = drp['Labeling proteomics'].astype(str)
+    drp.loc[:, 'Labeling proteomics'] = 'S' + drp['Labeling proteomics']
+    #Removing rows corresponding to the contaminated sample '128'
+    drp = drp.loc[drp['Labeling proteomics']!='S128']
+    #Drop duplicates and keep only the first entry - not necessary any more as data has been cleaned already!
+    #drp = drp.drop_duplicates(subset=['Labeling proteomics', 'drug'], keep='first')
+    #Filtering for 25 drugs - not necessary any more as data has been filtered already!
+    #drp = drp.loc[drp['drug'].isin(drugs_of_interest)]
+    ##Check how many drugs each sample is treated with
+    #drp.groupby('Labeling proteomics')['drug'].nunique()
+    ##Check how many samples were treated with the 25-drugs panel
+    #drp.groupby('drug')['Labeling proteomics'].nunique()
+    drug_class = create_groups(drp, drugOfInterest)
+    return drug_class
 
+# Clinical data
+def handlingClinicalData():
+    clin = pd.read_excel('Data/Clinical_data_proteomics_28012024_KR.xlsx', header=0)
+    clin['Sample ID Proteomics'] = clin['Sample ID Proteomics'].astype('str')
+    clin['Sample ID Proteomics'] = 'S'+clin['Sample ID Proteomics']
+    clin['Immunophenoytpe']=clin['Immunophenoytpe'].astype('str')
+    clin.drop(clin[clin['Sample ID Proteomics'] == 'S126'].index, inplace=True) #dropping the contaminated sample
+    #clin.head()
+    clin.loc[clin['Immunophenoytpe'].isin(['T-ALL', 'T-ALL ', 'T-LBL/T-ALL']), 'Immunophenoytpe'] = 'T-ALL'
+    clin.loc[clin['Sample ID Proteomics']=='S108', 'Diagnosis/Relapse'] = 'Diagnosis' #information collected from protein expression data
+    ##Check number of T-ALL and B-ALL samples
+    #clin['Immunophenoytpe'].value_counts()
+    ##Check number of Primary and Relapse samples
+    #clin['Diagnosis/Relapse'].value_counts()
+    B_ALL_samples = clin.loc[clin['Immunophenoytpe']== 'B-ALL', ['Sample ID Proteomics', 'Diagnosis/Relapse']]
+    T_ALL_samples = clin.loc[clin['Immunophenoytpe'] == 'T-ALL', ['Sample ID Proteomics', 'Diagnosis/Relapse']]
+    
+    #B_ALL_samples_primary = B_ALL_samples.loc[B_ALL_samples['Diagnosis/Relapse']=='Diagnosis', 'Sample ID Proteomics']
+    #B_ALL_samples_relapse = B_ALL_samples.loc[B_ALL_samples['Diagnosis/Relapse']=='Relapse', 'Sample ID Proteomics']
+    #T_ALL_samples_primary = T_ALL_samples.loc[T_ALL_samples['Diagnosis/Relapse']=='Diagnosis', 'Sample ID Proteomics']
+    #T_ALL_samples_relapse = T_ALL_samples.loc[T_ALL_samples['Diagnosis/Relapse']=='Relapse', 'Sample ID Proteomics']
 
-filtered_drugs = create_groups(filtered_drugs)
-#filtered_drugs.head()
+    #Loading the protein data
+    protein = pd.read_csv('Data/Proteome_Atleast1validvalue_ImputedGD.txt', header=0, sep='\t', low_memory=False)
+    protein = protein.iloc[5:,:]
+    protein_copy = protein.copy()
+    protein.index = protein['Protein ID']
 
-unique_lp = np.unique(filtered_drugs['Labeling proteomics'])
-unique_drugs = np.unique(filtered_drugs['drug'])
-classes = np.unique(filtered_drugs['Class'])
+    protein = protein.iloc[:,0:127]
+    #protein2gene_mapping =  protein_copy[['Protein ID', 'Gene']]
 
+    #B_ALL_primary = protein[protein.columns.intersection(B_ALL_samples_primary)].T
+    #B_ALL_relapse = protein[protein.columns.intersection(B_ALL_samples_relapse)].T
+    #T_ALL_primary = protein[protein.columns.intersection(T_ALL_samples_primary)].T
+    #T_ALL_relapse = protein[protein.columns.intersection(T_ALL_samples_relapse)].T
 
-#drugs_pivoted = filtered_drugs.pivot(index='Labeling proteomics', columns='drug', values='susceptibility_logAUC')
-#drugs_pivoted.to_csv(dir+'samples_treated_with_25_drug_panel_susceptibility_logAUC.csv')
+    B_ALL_df = protein[protein.columns.intersection(B_ALL_samples['Sample ID Proteomics'])].T
+    T_ALL_df = protein[protein.columns.intersection(T_ALL_samples['Sample ID Proteomics'])].T
 
-drug_class = filtered_drugs.pivot(index='Labeling proteomics', columns='drug', values='Class')
-#drug_class.head()
-#drug_class.shape
+    TALL_protein_samples = T_ALL_df.index
+    BALL_protein_samples = B_ALL_df.index
+    return [T_ALL_df, B_ALL_df, TALL_protein_samples, BALL_protein_samples]
 
-#Clinical data
-clin = pd.read_excel(dir+'Clinical_data_proteomics_28012024_KR.xlsx', header=0)
-clin['Sample ID Proteomics'] = clin['Sample ID Proteomics'].astype('str')
-clin['Sample ID Proteomics'] = 'S'+clin['Sample ID Proteomics']
-clin['Immunophenoytpe']=clin['Immunophenoytpe'].astype('str')
-#clin = clin.loc[clin['Immunophenoytpe']!='Sample contaminated, needs to be excluded']
-#clin.drop(clin[clin['Immunophenoytpe'] == 'Sample contaminated, needs to be excluded'].index, inplace=True)
-clin.drop(clin[clin['Sample ID Proteomics'] == 'S126'].index, inplace=True) #dropping the contaminated sample
-#clin.head()
+# Mapping DRP against Transcriptomics data
+def mapping_DRP_Transcriptomics(drug_class, TALL_protein_samples, BALL_protein_samples):
+    mapping_df = pd.read_excel('Data/T-ALL_Samples_Consolidated_Dibyendu_301024_051124_151124.xlsx', sheet_name='Proteomics', header=1)
+    mapping_df = mapping_df[['Sample ID Submitted', 'Remarks (Dibyendu)', 'Protein Sample ID']].dropna()
+    #Ensure the column is treated as strings and NaN values are properly handled
+    mapping_df['Protein Sample ID'] = mapping_df['Protein Sample ID'].astype(str).replace('nan', '')
 
-clin.loc[clin['Immunophenoytpe'].isin(['T-ALL', 'T-ALL ', 'T-LBL/T-ALL']), 'Immunophenoytpe'] = 'T-ALL'
-clin.loc[clin['Sample ID Proteomics']=='S108', 'Diagnosis/Relapse'] = 'Diagnosis' #information collected from protein expression data
+    #Split by commas and handle rows properly
+    mapping_df = mapping_df.assign(
+        protein_sample_id=mapping_df['Protein Sample ID'].str.split(',')
+        ).explode('protein_sample_id')
 
-#clin['Immunophenoytpe'].value_counts()
+    #Strip any leading/trailing whitespace and remove empty values
+    mapping_df['protein_sample_id'] = mapping_df['protein_sample_id'].str.strip()
+    mapping_df = mapping_df.loc[mapping_df['protein_sample_id'] != '']
+    mapping_df.drop(columns=['Protein Sample ID'], inplace=True)
+    mapping_df['protein_sample_id'] = 'S'+mapping_df['protein_sample_id']
+    mapping_df['Sample ID Submitted'] = 'OE0583_T-ALL_'+mapping_df['Sample ID Submitted'].astype(str)
+    #Filter by 'Remarks (Dibyendu)'
+    mapping_df = mapping_df.loc[mapping_df['Remarks (Dibyendu)'] == 'Available']
 
-#clin['Diagnosis/Relapse'].value_counts()
+    drug_class_df = drug_class.reset_index()
+    joined_df = mapping_df.merge(drug_class_df, how='inner', left_on='protein_sample_id', right_on='Labeling proteomics')
+    #print(joined_df.shape)
+    
+    TALL_RNA_samples = joined_df.loc[joined_df['protein_sample_id'].isin(TALL_protein_samples)]['Sample ID Submitted']
+    BALL_RNA_samples = joined_df.loc[joined_df['protein_sample_id'].isin(BALL_protein_samples)]['Sample ID Submitted']
+    #print(len(TALL_protein_samples))
+    #print(len(BALL_protein_samples))
+    #print(len(TALL_RNA_samples))
+    #print(len(BALL_RNA_samples))
+    #print('T-ALL RNA samples')
+    #print(TALL_RNA_samples)
+    #print('B-ALL RNA samples')
+    #print(BALL_RNA_samples)
+    
+    joined_df.index = joined_df['Sample ID Submitted']
+    drug_class_rna = joined_df.drop(columns = ['Sample ID Submitted', 'Remarks (Dibyendu)', 'protein_sample_id', 'Labeling proteomics'])
 
+    #Loading Transcriptomics data
+    rna = pd.read_csv('Data/High-Risk-ALL_rna_preprocessed.csv', index_col=0)
+    B_ALL_rna_df = rna.loc[BALL_RNA_samples]
+    T_ALL_rna_df = rna.loc[TALL_RNA_samples]
+    return [drug_class_rna, T_ALL_rna_df, B_ALL_rna_df]
 
-B_ALL_samples = clin.loc[clin['Immunophenoytpe']== 'B-ALL', ['Sample ID Proteomics', 'Diagnosis/Relapse']]
-T_ALL_samples = clin.loc[clin['Immunophenoytpe'] == 'T-ALL', ['Sample ID Proteomics', 'Diagnosis/Relapse']]
-
-B_ALL_samples_primary = B_ALL_samples.loc[B_ALL_samples['Diagnosis/Relapse']=='Diagnosis', 'Sample ID Proteomics']
-B_ALL_samples_relapse = B_ALL_samples.loc[B_ALL_samples['Diagnosis/Relapse']=='Relapse', 'Sample ID Proteomics']
-
-
-T_ALL_samples_primary = T_ALL_samples.loc[T_ALL_samples['Diagnosis/Relapse']=='Diagnosis', 'Sample ID Proteomics']
-T_ALL_samples_relapse = T_ALL_samples.loc[T_ALL_samples['Diagnosis/Relapse']=='Relapse', 'Sample ID Proteomics']
-
-protein = pd.read_csv(dir+'Proteome_Atleast1validvalue_ImputedGD.txt', header=0, sep='\t', low_memory=False)
-#protein.head()
-
-protein = protein.iloc[5:,:]
-#print(protein.shape)
-#protein.head()
-
-protein_copy = protein.copy()
-protein.index = protein['Protein ID']
-
-protein = protein.iloc[:,0:128]
-#protein.head()
-
-#Select samples treated with a 26 drugs panel
-protein = protein[filtered_drugs['Labeling proteomics'].unique()]
-#print(protein.shape)
-#protein.head()
-
-protein2gene_mapping =  protein_copy[['Protein ID', 'Gene']]
-#protein2gene_mapping.to_csv(dir+'protein2gene_mapping.csv')
-
-B_ALL_primary = protein[protein.columns.intersection(B_ALL_samples_primary)].T
-B_ALL_relapse = protein[protein.columns.intersection(B_ALL_samples_relapse)].T
-T_ALL_primary = protein[protein.columns.intersection(T_ALL_samples_primary)].T
-T_ALL_relapse = protein[protein.columns.intersection(T_ALL_samples_relapse)].T
-
-B_ALL_df = protein[protein.columns.intersection(B_ALL_samples['Sample ID Proteomics'])].T
-T_ALL_df = protein[protein.columns.intersection(T_ALL_samples['Sample ID Proteomics'])].T
-
-#B_ALL_df.shape
-
-#T_ALL_df.shape
-
-
-
-##Find feature importance w.r.t. a particular drug
-
-
-from sklearn.preprocessing import LabelEncoder
-import shap
-
+# Feature Selection
 def preSelectFeatures(X, y, threshold, exp_name):
     import os
     X['Target'] = y
     corr_mat = pd.DataFrame(X.corr()['Target'])
-    #pd.DataFrame(corr_mat).to_csv(os.path.join(dir,'Results/ML/New/')+exp_name+'_correlation_with_target_DRP.csv')
-    proteins = corr_mat.index[abs(corr_mat['Target']) >= threshold].tolist()   #consider both positive and negative correlations >=0.3 and <=-0.3
-    #print(proteins)
-    return proteins[:-1]
+    #pd.DataFrame(corr_mat).to_csv(os.path.join(dir,'Results/ML/New_05122024/')+exp_name+'_correlation_with_target_DRP.csv')
+    features = corr_mat.index[abs(corr_mat['Target']) >= threshold].tolist()   #consider both positive and negative correlations >=0.3 and <=-0.3
+    #print(features)
+    return features[:-1]
 
-
-def protein2gene(df, cols, mapping):
+def protein2gene(df, cols):
+    #Loading the protein data
+    protein = pd.read_csv('Data/Proteome_Atleast1validvalue_ImputedGD.txt', header=0, sep='\t', low_memory=False)
+    protein = protein.iloc[5:,:]
+    protein_copy = protein.copy()
+    protein.index = protein['Protein ID']
+    protein = protein.iloc[:,0:127]
+    protein2gene_mapping =  protein_copy[['Protein ID', 'Gene']]
     df = df[cols]
     genes = protein2gene_mapping.loc[protein2gene_mapping['Protein ID'].isin(df.columns), 'Gene']
     df.columns = genes
+    df.columns = df.columns.astype(str)
+    return df
+
+# def setProxy():
+#   #Set proxy
+#   import os
+# 
+# proxy = 'http://www-int2.dkfz-heidelberg.de:3128/'
+# 
+# os.environ['http_proxy'] = proxy 
+# os.environ['HTTP_PROXY'] = proxy
+# os.environ['https_proxy'] = proxy
+# os.environ['HTTPS_PROXY'] = proxy
+# os.environ['ftp_proxy'] = proxy
+# os.environ['FTP_PROXY'] = proxy
+# 
+# def ensembleID2Gene(X, cols):
+#   import mygene
+# import pandas as pd
+# 
+# setProxy()
+# #Initialize MyGeneInfo client
+# mg = mygene.MyGeneInfo()
+# 
+# def remove_version(ensg_ids):
+#   #Remove the version number from ENSG IDs.
+#   return [ensg.split('.')[0] for ensg in ensg_ids]
+# 
+# def map_ensg_to_gene_symbol(ensg_ids):
+#   #Map ENSG IDs (without version numbers) to gene symbols.
+#   cleaned_ensg_ids = remove_version(ensg_ids)
+# #Query mygene.info to get gene symbols for the cleaned ENSG IDs
+# result = mg.querymany(cleaned_ensg_ids, scopes="ensembl.gene", fields="symbol", species="human")
+# #Extract the mapping as a dictionary
+# mapping = {item['query']: item.get('symbol', 'NA') for item in result}
+# return mapping
+# 
+# mapping = map_ensg_to_gene_symbol(cols)
+# #mapping_df = pd.DataFrame(list(mapping.items()), columns=["ENSG_ID", "Gene_Symbol"])
+# print(mapping)
+# result = [value if value != "NA" else key for key, value in mapping.items()]
+# X.columns = result
+# return X
+
+def ensemblID2Gene(df, cols):
+    import pandas as pd
+    gene_mapping = pd.read_csv('Data/gene_mapping.csv')
+    #cols = remove_version(cols)
+    #print(cols)
+    df = df[cols]
+    #print(gene_mapping.head())
+    print(gene_mapping.columns)
+    mapping_dict = dict(zip(gene_mapping['Ensembl_ID'], gene_mapping['Gene_Symbol']))
+    # Map the column names using the mapping dictionary
+    df.columns = [mapping_dict.get(col, col) for col in cols]
     df.columns = df.columns.astype(str)
     return df
 
@@ -267,16 +260,15 @@ def importancePlot(feat_imp, exp_name):
     ax.set_title("Feature importance_"+exp_name)
     ax.set_ylabel("Score")
     ax.set_xlabel('Gene')
-    #filename = exp_name+'_feature_importance_based_on_DRP.png'
-    #plt.savefig(os.path.join(dir, 'Results/ML/New/')+filename, dpi = 300, format = 'png', bbox_inches="tight")
-    
+    filename = exp_name+'_feature_importance_based_on_DRP.pdf'
+    plt.savefig(os.path.join(dir, 'Results/')+filename, dpi = 300, format = 'pdf', bbox_inches="tight")
+
 def differentialPlot(df, conditions, exp_name):
     import scanpy as sc
     import anndata
     import os
     from scipy import stats
     import matplotlib.pyplot as plt
-    
     cols = df.columns.astype(str)
     samp = df.index
     X = pd.DataFrame(np.array(df, dtype=float))
@@ -287,12 +279,12 @@ def differentialPlot(df, conditions, exp_name):
     ad.obs = pd.DataFrame(conditions, columns=['class'])
     ad.var_names = X.columns
     ad.var_names_make_unique()
-    filename = exp_name+'_heatmap_based_on_DRP.png'
+    filename = exp_name+'_heatmap_based_on_DRP.pdf'
     with plt.rc_context():
         ax = sc.pl.heatmap(ad, ad.var_names, groupby='class', swap_axes=True, show_gene_labels=True, cmap="PiYG_r", show=False)
         ax['heatmap_ax'].set_ylabel("Gene")
         st.pyplot(plt.gcf())
-        #plt.savefig(os.path.join(dir,'Results/ML/New/')+filename, dpi = 300, format = 'png', bbox_inches="tight")
+        plt.savefig(os.path.join(dir,'Results/')+filename, dpi = 300, format = 'pdf', bbox_inches="tight")
 
 def majorityVoting(lof): #Input the list of features
     from collections import Counter
@@ -301,7 +293,6 @@ def majorityVoting(lof): #Input the list of features
         cnt+= Counter(x)
     features = [k for k,v in dict(cnt).items() if v>=2] #selecting a feature if 2 or more classifiers agree
     return features
-
 
 def selectFeatures(df, classifiers, exp_name, n):
     from sklearn.model_selection import train_test_split
@@ -386,57 +377,76 @@ def selectFeatures(df, classifiers, exp_name, n):
     selFeatures = majorityVoting(feat_imp)
     return selFeatures
 
-def classify(data, drug_class, exp_name, drugOfInterest, classifiers, num_features, threshold):
+def classify(data, drug_class, exp_name, classifiers, num_features, threshold, omics_type):
     import os
-    label = pd.DataFrame(drug_class[drugOfInterest])
-    label = label[label[drugOfInterest]!='Intermediate']
+    from sklearn.preprocessing import LabelEncoder
+    #print(data.head())
+    
+    
+    label = pd.DataFrame(drug_class['Class'])
+    label = label[label['Class']!='Intermediate']
     samples = data.index.intersection(label.index) #extracting sample IDs for drug classes 'Sensitive' and 'Resistant'
+    #print(label)
+    #print(samples)
     X = data.loc[samples]
     label = label.loc[samples]
     le = LabelEncoder()
-    y = le.fit_transform(label)
+    y = le.fit_transform(np.ravel(label))
     cols = X.columns.astype(str)
     samples = X.index
     X = pd.DataFrame(np.array(X, dtype=float))
     X.columns = cols
     X.index = samples
-    
+    #print(X.shape)
     #preselect features based on correlation with target variable from entire protein expression data
     feat = preSelectFeatures(X, y, threshold, exp_name)
-    print('{} proteins were found to have significant positive or negative correlation with the annotations.'.format(len(feat)))
-    #evaluateClassifiers(X, y)
-    X = X[feat]
-    X = protein2gene(X, X.columns, protein2gene_mapping)
+    if feat:
+        X = X[feat]
+    if omics_type == 'Proteomics':
+        print('{} proteins were found to have significant positive or negative correlation with the annotations.'.format(len(feat)))
+        X = protein2gene(X, X.columns)
+    elif omics_type == 'Transcriptomics':
+        print('{} genes were found to have significant positive or negative correlation with the annotations.'.format(len(feat)))
+        X = ensemblID2Gene(X, X.columns)
+
     #evaluateClassifiers(X,y)
     selFeatures = selectFeatures([X,y], classifiers, exp_name, num_features)
     X = X[selFeatures]
     differentialPlot(X, label.values, exp_name)
     X['Drug_Class']=label
-    #X.to_csv(os.path.join(dir+'Results/ML/New/')+exp_name+'DRP_ML_selFeatures_with_annotations.csv')
+    #X.to_csv(os.path.join(dir+'Results/ML/New_05122024/')+exp_name+'DRP_ML_selFeatures_with_annotations.csv')
     return selFeatures
 
+omics_type = st.selectbox('Select omics-type: ', ['Transcriptomics', 'Proteomics'])
 cell_type = st.selectbox('Select cell-type: ', ['T-ALL', 'B-ALL'])
-drugOfInterest = st.selectbox('Select drug', options=[opt.strip() for opt in unique_drugs])
-#selected_class = st.radio("Which class are you interested in?", options=[opt.strip() for opt in classes])
-
-if cell_type == 'B-ALL':
-    data = B_ALL_df
-elif cell_type == 'T-ALL':
-    data = T_ALL_df
-
+#drugs_of_interest = ['Idarubicin', 'Dasatinib', 'Ponatinib', 'Venetoclax', 'Navitoclax', 'Doxorubicin', 'Birinapant', 'Bortezomib', 'CB-103', 'Dexamethasone', 'Cytarabine', 'Etoposide', 'Methotrexate', 'Selinexor', 'Vincristine', 'Nilotinib', 'Temsirolimus', 'Bosutinib', 'Panobinostat', 'Trametinib', 'Ruxolitinib', 'Dinaciclib', 'A1331852', 'S-63845', 'Nelarabine']
+drugOfInterest = st.selectbox('Select drug', options=[opt.strip() for opt in drugs_of_interest]
+selected_class = st.radio("Which class are you interested in?", options=[opt.strip() for opt in classes])
 #num_features = st.slider('Select number of genes',0, protein.shape[1], 20))
 num_features = st.slider('Select number of genes you want to select',1, 100, 50)
 threshold = st.slider('Select threshold for correlation-based feature pre-selection', 0.00, 1.00, 0.55) #threshold for correlation-based preselection
 classifiers = st.multiselect('Select models - You may choose multiple among the following: [Logistic Regression, Decision Tree Classifier, Random Forest Classifier, Support Vector Machine Classifer, XG Boost Classifier and Lasso Regression]', ['LR', 'DT', 'RF', 'SVC', 'XGB', 'Lasso'])
-#st.write(classifiers)
+st.write(classifiers)
 
-#cell_type = 'T-ALL'
-#drugOfInterest = 'Dasatinib'
-#num_features = 50
-#threshold = 0.55 #threshold for correlation-based preselection
-#classifiers = ['LR', 'DT', 'RF', 'SVC', 'XGB', 'Lasso']
-#classifiers = ['LR', 'RF', 'SVC']
+drug_class = handlingDrugResponseData(drugOfInterest)
+l1 = handlingClinicalData()
+l2 = mapping_DRP_Transcriptomics(drug_class, l1[2], l1[3])
 
+if omics_type == 'Transcriptomics':
+    drug_data = l2[0]
+elif omics_type == 'Proteomics':
+    drug_data = drug_class
+
+if cell_type == 'B-ALL':
+    if omics_type == 'Transcriptomics':
+        data = l2[2]
+    elif omics_type == 'Proteomics':
+        data = l1[1]
+elif cell_type == 'T-ALL':
+    if omics_type == 'Transcriptomics':
+        data = l2[1]
+    elif omics_type == 'Proteomics':
+        data = l1[0]
 
 analyze = st.button('Analyze', on_click=set_stage, args=(1,))
 if analyze:
@@ -449,4 +459,4 @@ if analyze:
         path = 'D:/Dibyendu/Kerstin/'
         #shap_importance.to_csv(path+'shap_importance.csv')
         exp_name = cell_type+'_'+drugOfInterest+'_'
-        selFeatures = classify(data, drug_class, exp_name, drugOfInterest, classifiers, num_features, threshold)
+        selFeatures = classify(data, drug_data, exp_name, classifiers, num_features, threshold, omics_type)
