@@ -165,7 +165,7 @@ def preSelectFeatures(X, y, threshold, exp_name):
 
 def protein2gene(df, cols):
     #Loading the protein data
-    protein = pd.read_csv('Data/Proteome_Atleast1validvalue_ImputedGD.txt', header=0, sep='\t', low_memory=False)
+    protein = pd.read_csv(dir+'Proteome_Atleast1validvalue_ImputedGD.txt', header=0, sep='\t', low_memory=False)
     protein = protein.iloc[5:,:]
     protein_copy = protein.copy()
     protein.index = protein['Protein ID']
