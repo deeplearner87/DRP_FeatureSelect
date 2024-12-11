@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
-import gdown
+#import gdown
 
 st.write("""
 # High risk ALL - DRP data analysis!
@@ -432,7 +432,8 @@ drugOfInterest = st.selectbox('Select drug', options=[opt.strip() for opt in dru
 #num_features = st.slider('Select number of genes',0, protein.shape[1], 20))
 num_features = st.slider('Select number of features (genes/proteins) you want to select',1, 100, 50)
 threshold = st.slider('Select threshold for correlation-based feature pre-selection', 0.00, 1.00, 0.55) #threshold for correlation-based preselection
-classifiers = st.multiselect('Select models - You may choose multiple among the following: [Logistic Regression, Decision Tree Classifier, Random Forest Classifier, Support Vector Machine Classifer, XG Boost Classifier and Lasso Regression]', ['LR', 'DT', 'RF', 'SVC', 'XGB', 'Lasso'])
+#classifiers = st.multiselect('Select models - You may choose multiple among the following: [Logistic Regression, Decision Tree Classifier, Random Forest Classifier, Support Vector Machine Classifer, XG Boost Classifier and Lasso Regression]', ['LR', 'DT', 'RF', 'SVC', 'XGB', 'Lasso'])
+classifiers = st.multiselect('Select models - You may choose multiple among the following: [Logistic Regression, Decision Tree Classifier, Random Forest Classifier, Support Vector Machine Classifer and XG Boost Classifier]', ['LR', 'DT', 'RF', 'SVC', 'XGB'])
 st.write(classifiers)
 
 drug_class = handlingDrugResponseData(drugOfInterest)
@@ -463,7 +464,7 @@ if analyze:
         #shap_importance = classify('Dexamethasone', 'Resistant', 20)
         #shap_importance = classify(selected_drug, selected_class, num_features)
         #st.write(st.session_state)
-        path = 'D:/Dibyendu/Kerstin/'
+        #path = 'D:/Dibyendu/Kerstin/'
         #shap_importance.to_csv(path+'shap_importance.csv')
         exp_name = cell_type+'_'+drugOfInterest+'_'
         selFeatures = classify(data, drug_data, exp_name, classifiers, num_features, threshold, omics_type)
