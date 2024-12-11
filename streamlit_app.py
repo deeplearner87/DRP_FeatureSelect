@@ -267,7 +267,7 @@ def importancePlot(feat_imp, exp_name):
     ax.set_ylabel("Score")
     ax.set_xlabel('Gene')
     filename = exp_name+'_feature_importance_based_on_DRP.pdf'
-    plt.savefig(os.path.join(dir, 'Results/')+filename, dpi = 300, format = 'pdf', bbox_inches="tight")
+    #plt.savefig(os.path.join(dir, 'Results/')+filename, dpi = 300, format = 'pdf', bbox_inches="tight")
 
 def differentialPlot(df, conditions, exp_name):
     import scanpy as sc
@@ -290,7 +290,7 @@ def differentialPlot(df, conditions, exp_name):
         ax = sc.pl.heatmap(ad, ad.var_names, groupby='class', swap_axes=True, show_gene_labels=True, cmap="PiYG_r", show=False)
         ax['heatmap_ax'].set_ylabel("Gene")
         st.pyplot(plt.gcf())
-        plt.savefig(os.path.join(dir,'Results/')+filename, dpi = 300, format = 'pdf', bbox_inches="tight")
+        #plt.savefig(os.path.join(dir,'Results/')+filename, dpi = 300, format = 'pdf', bbox_inches="tight")
 
 def majorityVoting(lof): #Input the list of features
     from collections import Counter
